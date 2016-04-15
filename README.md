@@ -1,7 +1,7 @@
 # treeshrink_for_itol.py
 **A small utility for summarizing protein presence/absence in summary phylogenetic trees.**
 
-Uses ETE for tree analysis and NCBI Taxonomy handling.
+Uses ETE (http://etetoolkit.org/) for tree analysis and NCBI Taxonomy handling.
 ETE will already do many of the things iTOL does...
 but iTOL is friendlier to programming laymen.
 

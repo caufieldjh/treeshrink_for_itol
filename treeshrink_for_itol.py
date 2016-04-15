@@ -10,7 +10,7 @@ Remaining changes:
 Some downloaded NOGs don't appear to download correctly
 
 '''
-import glob, gzip, os, re, urllib2, sys
+import glob, gzip, os, re, requests, sys
 from ete2 import Tree, NCBITaxa
 
 ##Options
@@ -107,10 +107,10 @@ def getNOGTree(nog):
 	else:
 		print("Downloading tree for %s from eggNOG (%s)." % (nog, nog_tree_url))
 		try:
-			response = urllib2.urlopen(nog_tree_url)
+			response = requests.get(nog_tree_url)
 			tree_file = open(os.path.basename(tree_file_name), "w") #Start local file
 			while 1:
-				for line in response:
+				for line in response.text:
 					tree_file.write(line)
 				print("\nDownload complete.")
 				break
