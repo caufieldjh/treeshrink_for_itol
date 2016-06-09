@@ -59,11 +59,21 @@ def parse_tree_file(file_name):
 	#print(parent_taxids)
 			
 def find_parent(taxid, db):
+	have_parent = 0
 	lineage = ncbi.get_lineage(taxid)
+	lineagecutoff = 7
+	
 	if len(lineage) > 1:	#Some lineages resolve to root only. Error?
-		parent_taxid = lineage[4]	#Not the direct parent, more of the ancestor
+		while have_parent == 0:
+			try:
+				parent_taxid = lineage[lineagecutoff]	#Not the direct parent, more of the ancestor
+				have_parent = 1
+			except IndexError:
+				lineagecutoff = lineagecutoff -1
+				print("TESTFAIL")
 	else:
 		parent_taxid = lineage[0]
+		
 	#print(lineage)
 	#names = ncbi.get_taxid_translator(lineage)
 	#print [names[taxid] for taxid in lineage]
@@ -106,18 +116,17 @@ def getNOGTree(nog):
 		print("Found a matching tree file on disk: %s" % tree_file_name)
 	else:
 		print("Downloading tree for %s from eggNOG (%s)." % (nog, nog_tree_url))
-		try:
-			response = requests.get(nog_tree_url)
+		response = requests.get(nog_tree_url)
+		status = response.status_code
+		if status in [404, 500, 503]:
+			sys.exit("Could not find NOG on eggNOG (error %s received from server). Please try again." % status)
+		else:
 			tree_file = open(os.path.basename(tree_file_name), "w") #Start local file
-			while 1:
-				for line in response.text:
-					tree_file.write(line)
-				print("\nDownload complete.")
-				break
-		except urllib2.HTTPError:
-			print("Could not find that NOG on eggNOG.")
-			return "NA" 
-
+		while 1:
+			for line in response.text:
+				tree_file.write(line)
+			print("\nDownload complete.")
+			break
 	return tree_file_name
 	
 ##Main
@@ -128,6 +137,8 @@ def main():
 						
 	if choice.rstrip() == str(1):
 		nog = raw_input("Name of the NOG?\n")
+		if nog.find("OG") == -1:
+			sys.exit("Input does not look like a valid NOG ID. Please try again.")
 		tree_file_name = getNOGTree(nog)
 		if tree_file_name == "NA":
 			sys.exit("Please try again.")
