@@ -9,6 +9,10 @@ but iTOL is friendlier to programming laymen.
 Remaining changes:
 Some downloaded NOGs don't appear to download correctly
 
+To be added:
+#Presence/absence indicator as alternative to bar
+#Kingdom overlay as with standard iTOL tree
+
 '''
 import glob, gzip, os, re, requests, sys
 from ete2 import Tree, NCBITaxa
@@ -22,7 +26,7 @@ ncbi = NCBITaxa()	#Note that this stores in the home dir
 
 ##Functions
 
-def parse_tree_file(file_name, cutoff):
+def parse_tree_file(file_name, cutoff, set_choice):
 	#Returns parent taxids of nodes at a specific level
 	
 	with open(file_name) as tree_file:
@@ -54,7 +58,7 @@ def parse_tree_file(file_name, cutoff):
 			
 	total_count = len(leaf_taxids)
 	
-	output_taxidlist(parent_taxids)
+	output_taxidlist(parent_taxids, set_choice)
 	output_ann_file(parent_taxids, total_count)
 	#print(parent_taxids)
 			
@@ -78,11 +82,15 @@ def find_parent(taxid, db, lineagecutoff):
 	#print [names[taxid] for taxid in lineage]
 	return parent_taxid
 	
-def output_taxidlist(parent_taxids):
+def output_taxidlist(parent_taxids, include_empty):
 	out_filename = "output_taxidlist.txt"
 	with open(out_filename, "w+b") as taxid_file:
 		for taxid in parent_taxids.keys():
 			taxid_file.write("%s\n" % taxid)
+		if include_empty in [1,2]:
+			rep_taxid_set = get_rep_taxids(include_empty)
+			for taxid in rep_taxid_set:
+				taxid_file.write("%s\n" % taxid)
 	print("Wrote new taxid list to %s." % out_filename)
 	
 def output_ann_file(parent_taxids, total):
@@ -126,11 +134,25 @@ def getNOGTree(nog):
 			break
 	return tree_file_name
 	
+def get_rep_taxids(taxid_set_choice):
+	#Gets a list of representative taxids much like the basic Tree of Life
+	rep_taxids = []
+	if taxid_set_choice == 1: #Get all representatives
+		taxidfilename = "rep_taxids.txt"	
+	elif taxid_set_choice == 2: #Get bacterial representatives
+		taxidfilename = "rep_taxids_bac.txt"
+		
+	with open(taxidfilename) as taxidfile:
+			for line in taxidfile:
+				rep_taxids.append(line.rstrip())
+					
+	return rep_taxids
+	
 ##Main
 def main():
 	choice = raw_input("Please choose an option:\n" +
 						"1\tSpecify a NOG\n" +
-						"2\tProvide a tree file\n")
+						"2\tProvide a NOG tree file\n")
 						
 	if choice.rstrip() == str(1):
 		nog = raw_input("Name of the NOG?\n")
@@ -156,15 +178,32 @@ def main():
 	cutoff = -1
 	while cutoff <0:
 		cutoff_choice = raw_input("Please choose a lineage cutoff level "
-									"between 2 and 10, with 0 as root and 7 "
+									"between 2 and 7, with 0 as root and 7 "
 									"roughly corresponding to genus.\n")
 		try:
 			cutoff_choice = int(cutoff_choice)
 		except ValueError:
 			print("Please enter a different value.")
 			pass  # it was a string, not an int.
-		cutoff = cutoff_choice		
-	parse_tree_file(tree_file_name, cutoff)
+		if int(cutoff_choice) > 7:
+			print("WARNING: This cutoff is very close to species level "
+					"and may produce errors and/or a large tree.")
+		cutoff = int(cutoff_choice)	
+	
+	set_choice = -1
+	while set_choice <0:
+		set_choice_input = raw_input("Include just those groups containing the NOG,\n "
+								"all other representative groups,\n"
+								"or all representative bacterial groups?\n"
+								"Enter option 0, 1, or 2, respectively.\n")
+		try:
+			cutoff_choice = int(cutoff_choice)
+		except ValueError:
+			print("Please enter a different value.")
+		if int(set_choice_input) in [0,1,2]:
+			set_choice = int(set_choice_input)
+							
+	parse_tree_file(tree_file_name, cutoff, set_choice)
 	
 	print("Please do the following:\n"
 			"1. Copy the taxids from the taxidlist file into "
