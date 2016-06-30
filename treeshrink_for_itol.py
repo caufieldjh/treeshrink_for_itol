@@ -22,9 +22,8 @@ ncbi = NCBITaxa()	#Note that this stores in the home dir
 
 ##Functions
 
-def parse_tree_file(file_name):
+def parse_tree_file(file_name, cutoff):
 	#Returns parent taxids of nodes at a specific level
-	#For now this is the Order level
 	
 	with open(file_name) as tree_file:
 		treestring = tree_file.readline()
@@ -40,12 +39,13 @@ def parse_tree_file(file_name):
 		leaf_taxids.append(leaf_taxid)
 	#print(leaf_taxids)
 	
+	print("Using lineage cutoff of %s" % cutoff)
 	print("Retrieving parent nodes for each leaf...")
 	for taxid in leaf_taxids:	
 		#We're assuming taxids are all in the database here to save time
 		#But the following can be used too
 		#if taxid in all_nodes.keys():
-		parent_taxid = find_parent(taxid, ncbi)
+		parent_taxid = find_parent(taxid, ncbi, cutoff)
 		
 		if parent_taxid in parent_taxids.keys():
 			parent_taxids[parent_taxid] = parent_taxids[parent_taxid] +1
@@ -58,10 +58,9 @@ def parse_tree_file(file_name):
 	output_ann_file(parent_taxids, total_count)
 	#print(parent_taxids)
 			
-def find_parent(taxid, db):
+def find_parent(taxid, db, lineagecutoff):
 	have_parent = 0
 	lineage = ncbi.get_lineage(taxid)
-	lineagecutoff = 7
 	
 	if len(lineage) > 1:	#Some lineages resolve to root only. Error?
 		while have_parent == 0:
@@ -95,15 +94,13 @@ def output_ann_file(parent_taxids, total):
 						"DATASET_LABEL\tGenomes With OG Member\n" +
 						"COLOR\t#006400\n" +
 						"FIELD_COLORS\t#006400\t#00ff00\n" +
-						"FIELD_LABELS\tAbsolute\tRelative\n" +
+						"FIELD_LABELS\tAbsolute\n" +
 						"ALIGN_FIELDS\t1\n" +
 						"DATA\n")
 		for taxid in parent_taxids:
 			count = parent_taxids[taxid] 
-			relative_count = (count/float(total))*100	
-				#Actually a percentage for display purposes
-			ann_file.write("%s\t%s\t%s\n" % (taxid, count,
-											relative_count))
+			#relative_count = (count/float(total))*100	
+			ann_file.write("%s\t%s\n" % (taxid, count))
 	print("Wrote new annotation file to %s." % out_filename)
 	
 def getNOGTree(nog):
@@ -155,8 +152,28 @@ def main():
 				
 	else:
 		print("Did not recognize that choice. Please try again.")
-		
-	parse_tree_file(tree_file_name)
+	
+	cutoff = -1
+	while cutoff <0:
+		cutoff_choice = raw_input("Please choose a lineage cutoff level "
+									"between 2 and 10, with 0 as root and 7 "
+									"roughly corresponding to genus.\n")
+		try:
+			cutoff_choice = int(cutoff_choice)
+		except ValueError:
+			print("Please enter a different value.")
+			pass  # it was a string, not an int.
+		cutoff = cutoff_choice		
+	parse_tree_file(tree_file_name, cutoff)
+	
+	print("Please do the following:\n"
+			"1. Copy the taxids from the taxidlist file into "
+			"the \"Tree Elements\" box at http://phylot.biobyte.de/\n"
+			"2. Select NCBI Taxonomy IDs under Tree Options\n"
+			"3. Click on the Visualize in iTOL button\n"
+			"4. Drag the output annotations file onto the iTOL browser window\n"
+			"5. Click the Auto Assign Taxonomy button in the control panel "
+			"(in the Advanced tab)")
 	
 if __name__ == "__main__":
 	sys.exit(main())
