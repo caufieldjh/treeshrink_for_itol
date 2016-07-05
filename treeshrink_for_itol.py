@@ -73,7 +73,6 @@ def find_parent(taxid, db, lineagecutoff):
 				have_parent = 1
 			except IndexError:
 				lineagecutoff = lineagecutoff -1
-				print("TESTFAIL")
 	else:
 		parent_taxid = lineage[0]
 		
@@ -97,18 +96,29 @@ def output_ann_file(parent_taxids, total):
 	out_filename = "output_annotations.txt"
 	
 	with open(out_filename, "w+b") as ann_file:
-		ann_file.write("DATASET_MULTIBAR\n" +
+		#ann_file.write("DATASET_MULTIBAR\n" +
+						#"SEPARATOR TAB\n" +
+						#"DATASET_LABEL\tGenomes With OG Member\n" +
+						#"COLOR\t#006400\n" +
+						#"FIELD_COLORS\t#006400\t#00ff00\n" +
+						#"FIELD_LABELS\tAbsolute\n" +
+						#"ALIGN_FIELDS\t1\n" +
+						#"DATA\n")
+		#for taxid in parent_taxids:
+			#count = parent_taxids[taxid] 
+			##relative_count = (count/float(total))*100	
+			#ann_file.write("%s\t%s\n" % (taxid, count))
+		ann_file.write("DATASET_BINARY\n" +
 						"SEPARATOR TAB\n" +
 						"DATASET_LABEL\tGenomes With OG Member\n" +
 						"COLOR\t#006400\n" +
 						"FIELD_COLORS\t#006400\t#00ff00\n" +
-						"FIELD_LABELS\tAbsolute\n" +
-						"ALIGN_FIELDS\t1\n" +
+						"FIELD_SHAPES\t3\n" +
+						"FIELD_LABELS\tField1\n" +
 						"DATA\n")
 		for taxid in parent_taxids:
-			count = parent_taxids[taxid] 
-			#relative_count = (count/float(total))*100	
-			ann_file.write("%s\t%s\n" % (taxid, count))
+			if parent_taxids[taxid]:
+				ann_file.write("%s\t1\n" % taxid)
 	print("Wrote new annotation file to %s." % out_filename)
 	
 def getNOGTree(nog):
